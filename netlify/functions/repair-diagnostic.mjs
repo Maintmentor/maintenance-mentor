@@ -241,7 +241,7 @@ export default async function handler(req) {
         videos: [],
         topic: "general",
       },
-      { headers: { "Content-Type": "application/json", ...CORS_HEADERS } }
+      { headers: CORS_HEADERS }
     );
   } catch (error) {
     console.error("repair-diagnostic error:", error.message);

@@ -12,6 +12,12 @@
   status = 301
   force = true
 
+# Ensure Netlify Functions are accessible (not caught by SPA fallback)
+[[redirects]]
+  from = "/.netlify/functions/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
 # SPA fallback - serve index.html for all routes (client-side routing)
 [[redirects]]
   from = "/*"
