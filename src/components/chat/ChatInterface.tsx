@@ -254,9 +254,11 @@ export default function ChatInterface({ conversationId, initialMessage }: any) {
       console.error('Chat error:', error);
       
       // Show user-friendly error message
-      const errorMessage = error.message?.includes('timeout') 
+      const errorMessage = error.message?.includes('timeout')
         ? 'Request timed out. Please try again with a shorter question.'
-        : error.message?.includes('API') 
+        : error.message?.includes('Failed to send')
+        ? 'Unable to reach the AI service. Please check your internet connection and try again.'
+        : error.message?.includes('API')
         ? 'AI service temporarily unavailable. Please try again.'
         : 'Failed to get response. Please try again.';
       
