@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
+    "@netlify/functions": "^5.1.2"
+  }
+}

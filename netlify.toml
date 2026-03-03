@@ -1,5 +1,6 @@
 [build]
   publish = "dist"
+  functions = "netlify/functions"
 
 [build.environment]
   NODE_VERSION = "18"
@@ -12,8 +13,8 @@
     X-Content-Type-Options = "nosniff"
     X-XSS-Protection = "1; mode=block"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    Permissions-Policy = "camera=(self), microphone=(), geolocation=()"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' https:; connect-src 'self' https://kudlclzjfihbphehhiii.supabase.co https://*.supabase.co https://api.openai.com https://www.googleapis.com https://d64gsuwffb70l.cloudfront.net https:; media-src 'self' https:; frame-ancestors 'none'; upgrade-insecure-requests"
+    Permissions-Policy = "camera=(self), microphone=(self), geolocation=()"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data: https:; connect-src 'self' https://kudlclzjfihbphehhiii.supabase.co https://*.supabase.co https://api.openai.com https://www.googleapis.com https://d64gsuwffb70l.cloudfront.net https://www.homedepot.com https://www.lowes.com https://www.amazon.com https:; media-src 'self' blob: data: https: http:; frame-ancestors 'none'; worker-src 'self' blob:; upgrade-insecure-requests"
 
 # Cache static assets
 [[headers]]
@@ -32,6 +33,14 @@
   for = "/service-worker.js"
   [headers.values]
     Cache-Control = "no-cache, no-store, must-revalidate"
+
+# API function CORS headers
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization, apikey, x-client-info"
 
 # Redirect www to non-www
 [[redirects]]
