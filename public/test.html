@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maintenance Mentor - Test Page</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { color: #2563eb; }
+        .success { color: #16a34a; font-weight: bold; }
+        .button {
+            display: inline-block;
+            background: #2563eb;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 6px;
+            text-decoration: none;
+            margin: 10px 10px 10px 0;
+        }
+        .button:hover { background: #1d4ed8; }
+        ul { line-height: 1.8; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>✅ Server is Working!</h1>
+        <p class="success">If you can see this page, the server is running correctly.</p>
+        
+        <h2>Quick Diagnostics:</h2>
+        <ul>
+            <li><strong>Server Status:</strong> ✅ Running</li>
+            <li><strong>Static Files:</strong> ✅ Loading</li>
+            <li><strong>HTML Rendering:</strong> ✅ Working</li>
+        </ul>
+
+        <h2>Next Steps:</h2>
+        <a href="/" class="button">Go to Homepage</a>
+        <a href="/dashboard" class="button">Go to Dashboard</a>
+        
+        <h2>Troubleshooting:</h2>
+        <p>If the homepage shows blank:</p>
+        <ol>
+            <li>Open browser console (F12) and check for errors</li>
+            <li>Clear browser cache (Ctrl+Shift+Delete)</li>
+            <li>Hard refresh the page (Ctrl+Shift+R)</li>
+            <li>Check .env file exists with Supabase credentials</li>
+        </ol>
+
+        <h2>Console Check:</h2>
+        <p>Open Developer Tools (F12) → Console tab and look for:</p>
+        <ul>
+            <li>Red error messages</li>
+            <li>Failed network requests</li>
+            <li>Missing environment variables</li>
+        </ul>
+    </div>
+
+    <script>
+        console.log('✅ Test page loaded successfully');
+        console.log('Current URL:', window.location.href);
+        console.log('User Agent:', navigator.userAgent);
+    </script>
+</body>
+</html>
