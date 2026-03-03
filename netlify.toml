@@ -1,0 +1,15 @@
+[build]
+  publish = "dist"
+
+# Redirect www to non-www
+[[redirects]]
+  from = "https://www.maintenancementor.io/*"
+  to = "https://maintenancementor.io/:splat"
+  status = 301
+  force = true
+
+# SPA fallback - serve index.html for all routes (client-side routing)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
