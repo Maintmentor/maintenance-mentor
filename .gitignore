@@ -104,3 +104,6 @@ celerybeat-schedule
 
 # macOS
 .DS_Store
+
+# Local Netlify folder
+.netlify
