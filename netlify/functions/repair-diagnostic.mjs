@@ -1,25 +1,7 @@
 // Netlify Function that handles the AI chat for repair diagnostics.
-// Replaces the broken Supabase edge function by calling the Anthropic API directly.
+// Uses the Netlify AI Gateway for Anthropic API access (zero-config).
 
-const SUPABASE_URL =
-  process.env.SUPABASE_URL || "https://kudlclzjfihbphehhiii.supabase.co";
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-const ANTHROPIC_BASE_URL = process.env.ANTHROPIC_BASE_URL || "https://api.anthropic.com/v1/";
-
-// Netlify AI Gateway only works via the .netlify.app domain.
-// If the base URL uses a custom domain, rewrite it to the .netlify.app domain.
-const SITE_ID = process.env.SITE_ID || "c377b852-9dd0-41b9-ac74-3feca1bc56c0";
-function getAnthropicEndpoint() {
-  // If the base URL already contains .netlify.app or api.anthropic.com, use it directly
-  if (ANTHROPIC_BASE_URL.includes(".netlify.app") || ANTHROPIC_BASE_URL.includes("api.anthropic.com")) {
-    const base = ANTHROPIC_BASE_URL.endsWith("/") ? ANTHROPIC_BASE_URL : ANTHROPIC_BASE_URL + "/";
-    const needsV1 = !base.includes("/v1");
-    return needsV1 ? `${base}v1/messages` : `${base}messages`;
-  }
-  // Otherwise, construct the URL from the site ID
-  return `https://${SITE_ID}.netlify.app/.netlify/ai/v1/messages`;
-}
+const SUPABASE_URL = "https://kudlclzjfihbphehhiii.supabase.co";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -45,23 +27,86 @@ RESPONSE FORMAT:
 
 RESTRICTIONS: Only answer repair/maintenance questions. Stay helpful and practical.`;
 
+// Resolve the Anthropic API endpoint and key at invocation time.
+// Netlify AI Gateway injects ANTHROPIC_API_KEY and ANTHROPIC_BASE_URL at runtime.
+// We also support NETLIFY_AI_GATEWAY_KEY / NETLIFY_AI_GATEWAY_BASE_URL as fallback.
+function getApiConfig() {
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  const anthropicBase = process.env.ANTHROPIC_BASE_URL;
+  const gatewayKey = process.env.NETLIFY_AI_GATEWAY_KEY;
+  const gatewayBase = process.env.NETLIFY_AI_GATEWAY_BASE_URL;
+
+  // Prefer ANTHROPIC_* env vars (set by Netlify AI Gateway or manually)
+  if (anthropicKey && anthropicBase) {
+    const base = anthropicBase.endsWith("/") ? anthropicBase : anthropicBase + "/";
+    const endpoint = base.includes("/v1") ? `${base}messages` : `${base}v1/messages`;
+    return {
+      endpoint,
+      headers: {
+        "x-api-key": anthropicKey,
+        "anthropic-version": "2023-06-01",
+        "Content-Type": "application/json",
+      },
+    };
+  }
+
+  // Fallback: use the generic Netlify AI Gateway endpoint
+  if (gatewayKey && gatewayBase) {
+    const base = gatewayBase.endsWith("/") ? gatewayBase : gatewayBase + "/";
+    return {
+      endpoint: `${base}anthropic/v1/messages`,
+      headers: {
+        Authorization: `Bearer ${gatewayKey}`,
+        "anthropic-version": "2023-06-01",
+        "Content-Type": "application/json",
+      },
+    };
+  }
+
+  // Last resort: construct the gateway URL from the site ID
+  if (anthropicBase) {
+    // We have the base URL but no key — the gateway might still accept keyless requests
+    const base = anthropicBase.endsWith("/") ? anthropicBase : anthropicBase + "/";
+    const endpoint = base.includes("/v1") ? `${base}messages` : `${base}v1/messages`;
+    return {
+      endpoint,
+      headers: {
+        "anthropic-version": "2023-06-01",
+        "Content-Type": "application/json",
+      },
+    };
+  }
+
+  if (anthropicKey) {
+    // We have a key but no custom base URL — use the direct Anthropic API
+    return {
+      endpoint: "https://api.anthropic.com/v1/messages",
+      headers: {
+        "x-api-key": anthropicKey,
+        "anthropic-version": "2023-06-01",
+        "Content-Type": "application/json",
+      },
+    };
+  }
+
+  return null;
+}
+
 async function loadConversationHistory(conversationId) {
-  if (!conversationId || !SUPABASE_SERVICE_ROLE_KEY) return [];
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!conversationId || !serviceRoleKey) return [];
 
   try {
     const url = new URL(`${SUPABASE_URL}/rest/v1/messages`);
-    url.searchParams.set(
-      "select",
-      "content,role,images"
-    );
+    url.searchParams.set("select", "content,role,images");
     url.searchParams.set("conversation_id", `eq.${conversationId}`);
     url.searchParams.set("order", "created_at.asc");
     url.searchParams.set("limit", "10");
 
     const resp = await fetch(url.toString(), {
       headers: {
-        apikey: SUPABASE_SERVICE_ROLE_KEY,
-        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`,
       },
     });
 
@@ -73,7 +118,8 @@ async function loadConversationHistory(conversationId) {
 }
 
 async function fetchPartImage(query) {
-  if (!SUPABASE_SERVICE_ROLE_KEY) return null;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceRoleKey) return null;
 
   try {
     const resp = await fetch(
@@ -81,7 +127,7 @@ async function fetchPartImage(query) {
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          Authorization: `Bearer ${serviceRoleKey}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ query }),
@@ -128,12 +174,23 @@ export default async function handler(req) {
       );
     }
 
-    if (!ANTHROPIC_API_KEY) {
+    // Resolve API configuration at invocation time
+    const apiConfig = getApiConfig();
+
+    if (!apiConfig) {
+      console.error("AI config missing. Available env vars:", {
+        hasAnthropicKey: !!process.env.ANTHROPIC_API_KEY,
+        hasAnthropicBase: !!process.env.ANTHROPIC_BASE_URL,
+        hasGatewayKey: !!process.env.NETLIFY_AI_GATEWAY_KEY,
+        hasGatewayBase: !!process.env.NETLIFY_AI_GATEWAY_BASE_URL,
+      });
       return Response.json(
-        { success: false, error: "AI API key not configured" },
+        { success: false, error: "AI service is not configured. Please check environment variables." },
         { status: 500, headers: CORS_HEADERS }
       );
     }
+
+    console.log("Using AI endpoint:", apiConfig.endpoint);
 
     // Build messages array for Anthropic
     const messages = [];
@@ -163,19 +220,13 @@ export default async function handler(req) {
       messages.push({ role: "user", content: question });
     }
 
-    // Call Anthropic API
+    // Call Anthropic API via the resolved endpoint
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 55000);
 
-    const anthropicEndpoint = getAnthropicEndpoint();
-
-    const response = await fetch(anthropicEndpoint, {
+    const response = await fetch(apiConfig.endpoint, {
       method: "POST",
-      headers: {
-        "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-        "Content-Type": "application/json",
-      },
+      headers: apiConfig.headers,
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
         max_tokens: 1500,
