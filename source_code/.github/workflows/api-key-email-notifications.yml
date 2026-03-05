@@ -1,0 +1,18 @@
+name: API Key Email Notifications
+
+on:
+  schedule:
+    # Run every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  send-api-key-alerts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send API Key Email Alerts
+        run: |
+          curl -X POST "${{ secrets.SUPABASE_URL }}/functions/v1/api-key-email-alerts" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{}'
