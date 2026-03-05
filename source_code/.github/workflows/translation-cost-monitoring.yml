@@ -1,0 +1,32 @@
+name: Translation Cost Monitoring
+
+on:
+  schedule:
+    # Run daily at 9 AM UTC
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+jobs:
+  analyze-costs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Analyze Translation Costs
+        run: |
+          curl -X POST '${{ secrets.SUPABASE_URL }}/functions/v1/translation-cost-analyzer' \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{"action": "analyze_costs", "days": 30}'
+
+      - name: Generate Projections
+        run: |
+          curl -X POST '${{ secrets.SUPABASE_URL }}/functions/v1/translation-cost-analyzer' \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{"action": "generate_projections"}'
+
+      - name: Check Cost Alerts
+        run: |
+          curl -X POST '${{ secrets.SUPABASE_URL }}/functions/v1/translation-cost-analyzer' \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{"action": "check_alerts"}'

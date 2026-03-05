@@ -1,0 +1,91 @@
+name: Trial Reminder Emails
+
+on:
+  schedule:
+    # Run daily at 9:00 AM UTC
+    - cron: '0 9 * * *'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  send-trial-reminders:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install @supabase/supabase-js
+
+      - name: Run trial reminder check
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          node -e "
+          const { createClient } = require('@supabase/supabase-js');
+          
+          const supabase = createClient(
+            process.env.VITE_SUPABASE_URL,
+            process.env.VITE_SUPABASE_ANON_KEY
+          );
+          
+          async function checkAndSendReminders() {
+            try {
+              const now = new Date();
+              const { data: profiles, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('subscription_status', 'trialing')
+                .not('trial_ends_at', 'is', null);
+              
+              if (error) throw error;
+              
+              const reminders = [];
+              
+              for (const profile of profiles || []) {
+                const trialEnd = new Date(profile.trial_ends_at);
+                const daysRemaining = Math.ceil((trialEnd - now) / (1000 * 60 * 60 * 24));
+                
+                if (daysRemaining === 5 && !profile.trial_reminder_day5_sent) {
+                  reminders.push({ profile, daysRemaining: 5 });
+                } else if (daysRemaining === 1 && !profile.trial_reminder_day7_sent) {
+                  reminders.push({ profile, daysRemaining: 1 });
+                }
+              }
+              
+              for (const { profile, daysRemaining } of reminders) {
+                const { error: emailError } = await supabase.functions.invoke('trial-reminder-email', {
+                  body: {
+                    email: profile.email,
+                    fullName: profile.full_name,
+                    daysRemaining,
+                    trialEndsAt: profile.trial_ends_at
+                  }
+                });
+                
+                if (!emailError) {
+                  const updateField = daysRemaining === 5 ? 'trial_reminder_day5_sent' : 'trial_reminder_day7_sent';
+                  await supabase
+                    .from('profiles')
+                    .update({ [updateField]: true })
+                    .eq('id', profile.id);
+                  
+                  console.log(\`Sent day \${daysRemaining} reminder to \${profile.email}\`);
+                }
+              }
+              
+              console.log(\`Processed \${reminders.length} trial reminders\`);
+            } catch (error) {
+              console.error('Error:', error);
+              process.exit(1);
+            }
+          }
+          
+          checkAndSendReminders();
+          "
