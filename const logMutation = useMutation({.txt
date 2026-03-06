@@ -1,0 +1,23 @@
+const logMutation = useMutation({
+  mutationFn: async () => {
+    if (!results) return;
+    const { error } = await supabase.from('repair_logs').insert({
+      user_id: user?.id,
+      category: activeCategory || 'general',
+      symptoms: searchTerm,
+      steps: results.steps,
+      parts_needed: results.partsNeeded,
+      notes: 'AI-generated diagnostic',  // Add input for notes if needed
+    });
+    if (error) throw error;
+
+    // Trigger Slack alert (POST to your edge function)
+    await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/slack-alert-sender`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ log_id: 'new-log-id-here', message: `New repair log: ${searchTerm}` }),  // Customize
+    });
+  },
+  onSuccess: () => toast({ title: 'Log saved!', description: 'Sent to team Slack.' }),
+  onError: () => toast({ title: 'Error', description: 'Failed to save log.', variant: 'destructive' }),
+});
