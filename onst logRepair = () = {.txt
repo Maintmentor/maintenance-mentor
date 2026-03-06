@@ -1,0 +1,28 @@
+onst logRepair = () => {
+  logMutation.mutate();
+  setLogged(true);
+  setTimeout(() => setLogged(false), 2000);
+};
+
+const logMutation = useMutation({
+  mutationFn: async () => {
+    const { error } = await supabase.from('repair_logs').insert({
+      user_id: user?.id,
+      category: article.category,
+      symptoms: article.title,
+      steps: article.steps,
+      parts_needed: article.parts,
+      notes: 'From article guide',
+    });
+    if (error) throw error;
+
+    // Trigger Slack
+    await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/slack-alert-sender`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ log_id: 'new-log-id-here', message: `Logged repair: ${article.title}` }),
+    });
+  },
+  onSuccess: () => toast({ title: 'Log saved!', description: 'Sent to Slack.' }),
+  onError: () => toast({ title: 'Error', description: 'Failed to log.', variant: 'destructive' }),
+});
