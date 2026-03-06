@@ -1,0 +1,74 @@
+mport { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Sun, Moon, Laptop } from 'lucide-react';
+
+type Theme = 'light' | 'dark' | 'system';
+
+export default function ThemeToggle() {
+  const [theme, setTheme] = useState<Theme>(() => {
+    const stored = localStorage.getItem('theme') as Theme | null;
+    if (stored) return stored;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const applyTheme = (th: Theme) => {
+      if (th === 'system') {
+        const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        root.classList.toggle('dark', systemDark);
+      } else {
+        root.classList.toggle('dark', th === 'dark');
+      }
+      localStorage.setItem('theme', th);
+    };
+
+    applyTheme(theme);
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = () => {
+      if (theme === 'system') applyTheme('system');
+    };
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, [theme]);
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="icon" className="text-sidebar-foreground hover:bg-sidebar-accent">
+          {theme === 'dark' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-48 p-0">
+        <div className="flex flex-col">
+          <Button
+            variant="ghost"
+            className={`justify-start px-4 py-3 ${theme === 'light' ? 'bg-accent' : ''}`}
+            onClick={() => setTheme('light')}
+          >
+            <Sun className="mr-3 h-4 w-4" />
+            Light
+          </Button>
+          <Button
+            variant="ghost"
+            className={`justify-start px-4 py-3 ${theme === 'dark' ? 'bg-accent' : ''}`}
+            onClick={() => setTheme('dark')}
+          >
+            <Moon className="mr-3 h-4 w-4" />
+            Dark
+          </Button>
+          <Button
+            variant="ghost"
+            className={`justify-start px-4 py-3 ${theme === 'system' ? 'bg-accent' : ''}`}
+            onClick={() => setTheme('system')}
+          >
+            <Laptop className="mr-3 h-4 w-4" />
+            System
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
