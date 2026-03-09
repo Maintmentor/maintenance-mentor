@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Connection Test - Maintenance Mentor</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      max-width: 600px;
+      width: 100%;
+      padding: 40px;
+    }
+    h1 {
+      color: #1a202c;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+    .subtitle {
+      color: #718096;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+    .url-display {
+      background: #f7fafc;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+      word-break: break-all;
+      font-family: monospace;
+      font-size: 12px;
+      color: #2d3748;
+    }
+    button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: all 0.3s;
+    }
+    button:hover { background: #5a67d8; transform: translateY(-2px); }
+    button:disabled { background: #cbd5e0; cursor: not-allowed; transform: none; }
+    .result {
+      margin-top: 20px;
+      padding: 20px;
+      border-radius: 8px;
+      display: none;
+    }
+    .result.show { display: block; }
+    .success {
+      background: #f0fdf4;
+      border: 2px solid #86efac;
+      color: #166534;
+    }
+    .error {
+      background: #fef2f2;
+      border: 2px solid #fca5a5;
+      color: #991b1b;
+    }
+    .result-title {
+      font-weight: 700;
+      font-size: 18px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .result-details {
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    pre {
+      background: #1a202c;
+      color: #e2e8f0;
+      padding: 15px;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin-top: 10px;
+      font-size: 12px;
+    }
+    .icon { font-size: 24px; }
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .steps {
+      background: #fffbeb;
+      border: 2px solid #fcd34d;
+      border-radius: 8px;
+      padding: 15px;
+      margin-top: 15px;
+      font-size: 14px;
+    }
+    .steps ol {
+      margin-left: 20px;
+      margin-top: 10px;
+    }
+    .steps li {
+      margin: 8px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔌 AI Connection Test</h1>
+    <p class="subtitle">Test connection to your Supabase edge function</p>
+    
+    <div class="url-display">
+      <strong>Target URL:</strong><br>
+      https://kudlclzjfihbphehhiii.supabase.co/functions/v1/repair-diagnostic
+    </div>
+
+    <button id="testBtn" onclick="testConnection()">
+      Run Connection Test
+    </button>
+
+    <div id="result" class="result"></div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://kudlclzjfihbphehhiii.supabase.co';
+    const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZGxjbHpqZmloYnBoZWhoaWlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwNDIxNTYsImV4cCI6MjA3MzYxODE1Nn0.gjd1_Q4G_LfKg_pZzQcUYQoTeSvrvL618uh_plQbQok';
+
+    async function testConnection() {
+      const btn = document.getElementById('testBtn');
+      const result = document.getElementById('result');
+      
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading"></span> Testing...';
+      result.classList.remove('show');
+
+      try {
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/repair-diagnostic`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${ANON_KEY}`
+          },
+          body: JSON.stringify({
+            question: 'Connection test',
+            images: []
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          showSuccess(response.status, data);
+        } else {
+          showError(response.status, data);
+        }
+      } catch (error) {
+        showError(0, { message: error.message });
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Run Connection Test';
+      }
+    }
+
+    function showSuccess(status, data) {
+      const result = document.getElementById('result');
+      result.className = 'result success show';
+      result.innerHTML = `
+        <div class="result-title">
+          <span class="icon">✅</span>
+          Connection Successful!
+        </div>
+        <div class="result-details">
+          <p><strong>Status:</strong> ${status} OK</p>
+          <p><strong>Edge Function:</strong> Working correctly</p>
+          <p><strong>AI Service:</strong> Connected</p>
+          <p style="margin-top: 10px;">Your AI Assistant is ready to use! 🎉</p>
+          <pre>${JSON.stringify(data, null, 2)}</pre>
+        </div>
+      `;
+    }
+
+    function showError(status, data) {
+      const result = document.getElementById('result');
+      result.className = 'result error show';
+      
+      let errorMsg = 'Unknown error';
+      let fixSteps = '';
+
+      if (status === 404) {
+        errorMsg = 'Edge function not found';
+        fixSteps = `
+          <div class="steps">
+            <strong>🔧 Fix Steps:</strong>
+            <ol>
+              <li>Deploy the function: <code>supabase functions deploy repair-diagnostic</code></li>
+              <li>Verify deployment: <code>supabase functions list</code></li>
+              <li>Test again</li>
+            </ol>
+          </div>
+        `;
+      } else if (status === 401) {
+        errorMsg = 'Authentication failed';
+        fixSteps = `
+          <div class="steps">
+            <strong>🔧 Fix Steps:</strong>
+            <ol>
+              <li>Get correct anon key from Supabase Dashboard</li>
+              <li>Update VITE_SUPABASE_ANON_KEY in .env file</li>
+              <li>Restart dev server: <code>npm run dev</code></li>
+            </ol>
+          </div>
+        `;
+      } else if (status === 500) {
+        errorMsg = 'Server error (likely missing OpenAI key)';
+        fixSteps = `
+          <div class="steps">
+            <strong>🔧 Fix Steps:</strong>
+            <ol>
+              <li>Get OpenAI API key from platform.openai.com</li>
+              <li>Set secret: <code>supabase secrets set OPENAI_API_KEY=sk-...</code></li>
+              <li>Or add in Supabase Dashboard → Edge Functions → Secrets</li>
+            </ol>
+          </div>
+        `;
+      } else if (status === 0) {
+        errorMsg = 'Network error - Cannot reach server';
+        fixSteps = `
+          <div class="steps">
+            <strong>🔧 Fix Steps:</strong>
+            <ol>
+              <li>Check internet connection</li>
+              <li>Verify Supabase project is active</li>
+              <li>Check status.supabase.com for outages</li>
+              <li>Try from different network/browser</li>
+            </ol>
+          </div>
+        `;
+      }
+
+      result.innerHTML = `
+        <div class="result-title">
+          <span class="icon">❌</span>
+          Connection Failed
+        </div>
+        <div class="result-details">
+          <p><strong>Status:</strong> ${status || 'Network Error'}</p>
+          <p><strong>Error:</strong> ${errorMsg}</p>
+          ${fixSteps}
+          <pre>${JSON.stringify(data, null, 2)}</pre>
+        </div>
+      `;
+    }
+  </script>
+</body>
+</html>
