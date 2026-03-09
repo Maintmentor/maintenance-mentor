@@ -1,3 +1,0 @@
-<Button onClick={() => logMutation.mutate()} disabled={logMutation.isPending} className="mt-8">
-  {logMutation.isPending ? 'Saving...' : 'Save This Log'}
-</Button>
