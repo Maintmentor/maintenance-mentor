@@ -1,0 +1,49 @@
+name: Health Check Monitoring
+
+on:
+  schedule:
+    # Run every 15 minutes
+    - cron: '*/15 * * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check System Health
+        run: |
+          RESPONSE=$(curl -s -X POST \
+            "${{ secrets.SUPABASE_URL }}/functions/v1/health-check" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{"action":"full"}')
+          
+          echo "Health Check Response: $RESPONSE"
+          
+          OVERALL=$(echo $RESPONSE | jq -r '.overall')
+          
+          if [ "$OVERALL" = "error" ]; then
+            echo "Critical health check failure detected"
+            exit 1
+          elif [ "$OVERALL" = "degraded" ]; then
+            echo "System degraded - some services are experiencing issues"
+          else
+            echo "All systems operational"
+          fi
+
+      - name: Send Alert on Failure
+        if: failure()
+        run: |
+          curl -X POST \
+            "${{ secrets.SUPABASE_URL }}/functions/v1/health-check-alert-sender" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "severity": "critical",
+              "functionName": "health-check-monitoring",
+              "message": "Automated health check detected critical system failure",
+              "details": {
+                "workflow": "health-check-monitoring",
+                "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"
+              }
+            }'
