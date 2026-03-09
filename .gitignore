@@ -27,3 +27,19 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Archive and binary files that should not be in source control
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Temporary notes and snippet files (excludes README.txt, CHANGELOG.txt, etc.)
+*.txt
+!README.txt
+!CHANGELOG.txt
+!LICENSE.txt
+
+# Specific junk files
+repair-student-tools-2*
+Tailwind Config Review*
