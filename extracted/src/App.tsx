@@ -23,8 +23,7 @@ import VideoAnalysis from "./pages/VideoAnalysis";
 import EdgeFunctionTest from "./pages/EdgeFunctionTest";
 import EnvSetup from "./pages/EnvSetup";
 import { BillingDashboard } from "./components/billing/BillingDashboard";
-import ComingSoon from "./components/ComingSoon";
-import { BarChart3 } from "lucide-react";
+import AnalyticsDashboard from "./components/analytics/AnalyticsDashboard";
 
 const queryClient = new QueryClient();
 
@@ -47,12 +46,8 @@ const App = () => (
                 <Route path="/billing" element={<BillingDashboard />} />
                 <Route path="/analytics" element={
                   <div className="min-h-screen bg-gray-50 py-12">
-                    <div className="max-w-4xl mx-auto px-4">
-                      <ComingSoon
-                        title="Analytics Coming Soon"
-                        description="View detailed analytics."
-                        icon={<BarChart3 className="h-12 w-12 text-white" />}
-                      />
+                    <div className="max-w-7xl mx-auto px-4">
+                      <AnalyticsDashboard />
                     </div>
                   </div>
                 } />

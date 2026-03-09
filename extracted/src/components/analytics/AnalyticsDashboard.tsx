@@ -104,7 +104,25 @@ export default function AnalyticsDashboard() {
     );
   }
 
-  if (!analytics) return null;
+  if (!analytics) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold">Analytics Dashboard</h2>
+            <p className="text-gray-600">Comprehensive maintenance insights and trends</p>
+          </div>
+        </div>
+        <Card>
+          <CardContent className="text-center py-12">
+            <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-500 text-lg font-medium mb-2">No analytics data yet</p>
+            <p className="text-gray-400 text-sm">Add repair history entries to start seeing analytics and insights.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const costData = [
     { month: 'Jan', cost: 320 },

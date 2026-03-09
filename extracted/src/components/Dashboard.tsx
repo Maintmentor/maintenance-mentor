@@ -9,7 +9,10 @@ import MaintenanceReminders from '@/components/maintenance/MaintenanceReminders'
 import RepairDashboard from '@/components/RepairDashboard';
 import NotificationPreferences from '@/components/notifications/NotificationPreferences';
 import AIFunctionTest from '@/components/ai/AIFunctionTest';
-import ComingSoon from '@/components/ComingSoon';
+import PartsTracker from '@/components/parts/PartsTracker';
+import AnalyticsDashboard from '@/components/analytics/AnalyticsDashboard';
+import QuestionAnalyticsDashboard from '@/components/analytics/QuestionAnalyticsDashboard';
+import ReportsGenerator from '@/components/reports/ReportsGenerator';
 
 import { EmailVerificationBanner } from '@/components/auth/EmailVerificationBanner';
 import { TrialCountdownBanner } from '@/components/subscription/TrialCountdownBanner';
@@ -146,11 +149,7 @@ export default function Dashboard() {
           </TabsContent>
 
           <TabsContent value="parts">
-            <ComingSoon 
-              title="Parts Tracker Coming Soon"
-              description="Track your maintenance parts inventory, orders, and suppliers. This feature will help you manage parts efficiently and never run out of essential supplies."
-              icon={<Package className="h-12 w-12 text-white" />}
-            />
+            <PartsTracker />
           </TabsContent>
 
 
@@ -159,27 +158,15 @@ export default function Dashboard() {
           </TabsContent>
 
           <TabsContent value="reports">
-            <ComingSoon 
-              title="Reports Coming Soon"
-              description="Generate comprehensive PDF reports of your maintenance history, costs, and analytics. Share reports via email with property owners, managers, or maintenance teams."
-              icon={<FileText className="h-12 w-12 text-white" />}
-            />
+            <ReportsGenerator />
           </TabsContent>
 
           <TabsContent value="analytics">
-            <ComingSoon 
-              title="Analytics Coming Soon"
-              description="View detailed analytics about your maintenance activities, costs over time, repair frequency, and efficiency metrics to optimize your operations."
-              icon={<BarChart3 className="h-12 w-12 text-white" />}
-            />
+            <AnalyticsDashboard />
           </TabsContent>
 
           <TabsContent value="question-analytics">
-            <ComingSoon 
-              title="Q&A Analytics Coming Soon"
-              description="Track your AI chat interactions, most common questions, response accuracy, and user satisfaction to improve the AI assistant experience."
-              icon={<BarChart3 className="h-12 w-12 text-white" />}
-            />
+            <QuestionAnalyticsDashboard />
           </TabsContent>
           
           <TabsContent value="notifications">
