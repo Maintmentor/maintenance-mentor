@@ -1,0 +1,42 @@
+name: Alert Goal Performance Notifications
+
+on:
+  schedule:
+    # Run every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  send-notifications:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Check for unsent notifications
+        run: |
+          # Get unsent notifications
+          RESPONSE=$(curl -s -X POST "${{ secrets.SUPABASE_URL }}/rest/v1/rpc/get_unsent_goal_notifications" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json")
+          
+          echo "Unsent notifications: $RESPONSE"
+          
+          # Process each notification
+          echo "$RESPONSE" | jq -c '.[]' | while read notification; do
+            NOTIFICATION_ID=$(echo "$notification" | jq -r '.id')
+            
+            # Trigger email sending
+            curl -X POST "${{ secrets.SUPABASE_URL }}/functions/v1/email-notification-service" \
+              -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"type\": \"immediate\",
+                \"templateType\": \"alert_goal_performance\",
+                \"notificationId\": \"$NOTIFICATION_ID\"
+              }"
+          done
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "Failed to send alert goal notifications"

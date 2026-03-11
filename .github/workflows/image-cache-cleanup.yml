@@ -1,0 +1,72 @@
+name: Image Cache Cleanup
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  cleanup-expired-cache:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install @supabase/supabase-js
+
+      - name: Clean expired cache entries
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          node -e "
+          const { createClient } = require('@supabase/supabase-js');
+          
+          const supabase = createClient(
+            process.env.SUPABASE_URL,
+            process.env.SUPABASE_SERVICE_ROLE_KEY
+          );
+          
+          async function cleanup() {
+            try {
+              // Mark expired entries as inactive
+              const { data, error } = await supabase
+                .from('image_cache')
+                .update({ is_active: false })
+                .lt('expires_at', new Date().toISOString())
+                .eq('is_active', true)
+                .select();
+              
+              if (error) throw error;
+              
+              console.log(\`Cleaned up \${data?.length || 0} expired cache entries\`);
+              
+              // Log cleanup analytics
+              if (data && data.length > 0) {
+                await supabase.from('image_cache_analytics').insert({
+                  cache_key: 'system',
+                  search_query: 'automated_cleanup',
+                  event_type: 'cleanup',
+                  response_time_ms: 0,
+                  source: 'github_action'
+                });
+              }
+            } catch (error) {
+              console.error('Cleanup failed:', error);
+              process.exit(1);
+            }
+          }
+          
+          cleanup();
+          "
+
+      - name: Notify on failure
+        if: failure()
+        run: echo "Cache cleanup failed. Check logs for details."

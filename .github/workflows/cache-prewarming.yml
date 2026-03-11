@@ -1,0 +1,77 @@
+name: Cache Prewarming
+
+on:
+  schedule:
+    # Run weekly on Sunday at 3 AM UTC
+    - cron: '0 3 * * 0'
+  workflow_dispatch: # Allow manual trigger
+    inputs:
+      queries:
+        description: 'Comma-separated list of queries to prewarm'
+        required: false
+        default: 'water heater,furnace filter,thermostat,air filter,faucet cartridge'
+
+jobs:
+  prewarm-cache:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install @supabase/supabase-js node-fetch
+
+      - name: Prewarm popular queries
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          QUERIES: ${{ github.event.inputs.queries || 'water heater,furnace filter,thermostat,air filter,faucet cartridge,circuit breaker,smoke detector,door lock,light switch,outlet' }}
+        run: |
+          node -e "
+          const { createClient } = require('@supabase/supabase-js');
+          
+          const supabase = createClient(
+            process.env.SUPABASE_URL,
+            process.env.SUPABASE_ANON_KEY
+          );
+          
+          async function prewarm() {
+            const queries = process.env.QUERIES.split(',').map(q => q.trim());
+            console.log(\`Prewarming cache for \${queries.length} queries...\`);
+            
+            let successCount = 0;
+            let failCount = 0;
+            
+            for (const query of queries) {
+              try {
+                console.log(\`Fetching: \${query}\`);
+                const { data, error } = await supabase.functions.invoke('image-cache-handler', {
+                  body: { searchQuery: query, forceRefresh: false }
+                });
+                
+                if (error) throw error;
+                
+                successCount++;
+                console.log(\`✓ Cached: \${query}\`);
+                
+                // Wait 2 seconds between requests to avoid rate limiting
+                await new Promise(resolve => setTimeout(resolve, 2000));
+              } catch (error) {
+                failCount++;
+                console.error(\`✗ Failed: \${query} - \${error.message}\`);
+              }
+            }
+            
+            console.log(\`\nPrewarming complete: \${successCount} success, \${failCount} failed\`);
+          }
+          
+          prewarm();
+          "
+
+      - name: Summary
+        run: echo "Cache prewarming completed. Check logs for details."
