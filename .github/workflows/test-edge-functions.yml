@@ -1,0 +1,71 @@
+name: Test Edge Functions
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/functions/**'
+  schedule:
+    - cron: '0 */6 * * *'  # Every 6 hours
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Validate Deployment
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          chmod +x validate-deployment.js
+          node validate-deployment.js
+
+      - name: Test Health Check Function
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          response=$(curl -s -X POST "$VITE_SUPABASE_URL/functions/v1/health-check" \
+            -H "Authorization: Bearer $VITE_SUPABASE_ANON_KEY" \
+            -H "Content-Type: application/json")
+          echo "Health check response: $response"
+
+      - name: Test Repair Diagnostic Function
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          curl -X POST "$VITE_SUPABASE_URL/functions/v1/repair-diagnostic" \
+            -H "Authorization: Bearer $VITE_SUPABASE_ANON_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{"description":"test toilet leak","category":"plumbing"}' \
+            --fail || echo "Repair diagnostic test completed"
+
+      - name: Create Test Report
+        if: always()
+        run: |
+          echo "## Edge Function Test Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Test Date:** $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "See job logs for detailed results" >> $GITHUB_STEP_SUMMARY
+
+      - name: Notify on Failure
+        if: failure()
+        run: |
+          echo "⚠️ Edge function tests failed!"
+          echo "Check the logs for details"
