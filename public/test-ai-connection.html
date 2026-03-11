@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Connection Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 { color: #333; margin-top: 0; }
+        .status {
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .pending { background: #d1ecf1; color: #0c5460; }
+        button {
+            background: #4f46e5;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover { background: #4338ca; }
+        button:disabled { background: #9ca3af; cursor: not-allowed; }
+        .code {
+            background: #f3f4f6;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 14px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🔧 AI Connection Test</h1>
+        <p>This will test your AI assistant connection and show detailed error logs.</p>
+        <button onclick="runTest()" id="testBtn">Run Connection Test</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        const SUPABASE_URL = 'https://kudlclzjfihbphehhiii.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZGxjbHpqZmloYnBoZWhoaWlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ3MjkzMjksImV4cCI6MjA1MDMwNTMyOX0.cqssOYJBl5xWZJqhDlqnqvLCGjVWBsJfzJYXCLB7Jxs';
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function runTest() {
+            const btn = document.getElementById('testBtn');
+            const results = document.getElementById('results');
+            btn.disabled = true;
+            btn.textContent = 'Testing...';
+            results.innerHTML = '';
+
+            // Test 1: Supabase Connection
+            addStatus('Testing Supabase connection...', 'pending');
+            try {
+                const { data, error } = await supabase.from('profiles').select('count').limit(1);
+                if (error) throw error;
+                addStatus('✅ Supabase connected successfully', 'success');
+            } catch (error) {
+                addStatus(`❌ Supabase error: ${error.message}`, 'error');
+                addCode(JSON.stringify(error, null, 2));
+            }
+
+            // Test 2: Edge Function
+            addStatus('Testing edge function...', 'pending');
+            try {
+                const startTime = Date.now();
+                const { data, error } = await supabase.functions.invoke('repair-diagnostic', {
+                    body: { question: 'test connection' }
+                });
+                const duration = Date.now() - startTime;
+
+                if (error) {
+                    addStatus(`❌ Edge function error (${duration}ms)`, 'error');
+                    addCode(JSON.stringify(error, null, 2));
+                } else {
+                    addStatus(`✅ Edge function responded (${duration}ms)`, 'success');
+                    addCode(JSON.stringify(data, null, 2));
+
+                    if (data.error && data.error.includes('OpenAI')) {
+                        addStatus('⚠️ OpenAI API key not configured', 'error');
+                        addFix('Add OPENAI_API_KEY to Supabase edge function secrets');
+                    } else if (data.success) {
+                        addStatus('✅ AI is working perfectly!', 'success');
+                    }
+                }
+            } catch (error) {
+                addStatus(`❌ Connection failed: ${error.message}`, 'error');
+                addCode(JSON.stringify(error, null, 2));
+            }
+
+            btn.disabled = false;
+            btn.textContent = 'Run Test Again';
+        }
+
+        function addStatus(message, type) {
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.textContent = message;
+            results.appendChild(div);
+        }
+
+        function addCode(code) {
+            const div = document.createElement('div');
+            div.className = 'code';
+            div.textContent = code;
+            results.appendChild(div);
+        }
+
+        function addFix(message) {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.style.background = '#fef3c7';
+            card.innerHTML = `<h3>🔧 How to Fix:</h3><p>${message}</p>`;
+            results.appendChild(card);
+        }
+    </script>
+</body>
+</html>
