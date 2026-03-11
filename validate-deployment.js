@@ -16,7 +16,16 @@ const FUNCTIONS_TO_TEST = [
   'repair-diagnostic',
   'slack-alert-sender',
   'storage-monitor',
-  'api-key-validator'
+  'api-key-validator',
+  'fetch-real-part-images',
+  'fetch-real-part-images-cached',
+  'generate-repair-image'
+];
+
+const IMAGE_FUNCTIONS = [
+  'fetch-real-part-images',
+  'fetch-real-part-images-cached',
+  'generate-repair-image'
 ];
 
 const colors = {
@@ -125,7 +134,29 @@ async function validateDeployment() {
   } else {
     log('\n✅ All functions deployed successfully!', 'green');
   }
-  
+
+  // Image Functions Status section
+  log('\n═══════════════════════════════════════════\n', 'blue');
+  log('Image Functions Status:', 'blue');
+  let imageFailures = 0;
+  IMAGE_FUNCTIONS.forEach(name => {
+    const result = results.find(r => r.name === name);
+    if (result && result.success) {
+      log(`  ✓ ${name}: LIVE`, 'green');
+    } else {
+      log(`  ✗ ${name}: DOWN`, 'red');
+      imageFailures++;
+    }
+  });
+
+  if (imageFailures > 0) {
+    log('\n⚠️  One or more image functions are not responding.', 'yellow');
+    log('Follow the deployment checklist to fix them:', 'yellow');
+    log('  docs/DEPLOY_IMAGE_FUNCTIONS_CHECKLIST.md', 'yellow');
+  } else {
+    log('\n✅ All image functions are live!', 'green');
+  }
+
   process.exit(failed > 0 ? 1 : 0);
 }
 
