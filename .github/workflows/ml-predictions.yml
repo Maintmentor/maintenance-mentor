@@ -1,0 +1,32 @@
+name: ML Predictions and Proactive Warnings
+
+on:
+  schedule:
+    # Run every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  run-ml-predictions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate ML Predictions
+        run: |
+          curl -X POST '${{ secrets.SUPABASE_URL }}/functions/v1/ml-analytics-processor' \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{"action": "generate_predictions"}'
+
+      - name: Check and Send Proactive Warnings
+        run: |
+          curl -X POST '${{ secrets.SUPABASE_URL }}/functions/v1/ml-analytics-processor' \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{"action": "check_warnings"}'
+
+      - name: Detect Anomalies
+        run: |
+          curl -X POST '${{ secrets.SUPABASE_URL }}/functions/v1/ml-analytics-processor' \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{"action": "detect_anomalies"}'

@@ -1,0 +1,108 @@
+name: Cache Performance Monitoring
+
+on:
+  schedule:
+    # Run every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  monitor-cache:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install @supabase/supabase-js
+
+      - name: Check cache performance
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          node -e "
+          const { createClient } = require('@supabase/supabase-js');
+          
+          const supabase = createClient(
+            process.env.SUPABASE_URL,
+            process.env.SUPABASE_SERVICE_ROLE_KEY
+          );
+          
+          async function checkPerformance() {
+            try {
+              // Get analytics from last 24 hours
+              const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+              
+              const { data: analytics, error } = await supabase
+                .from('image_cache_analytics')
+                .select('event_type, response_time_ms, source')
+                .gte('created_at', oneDayAgo);
+              
+              if (error) throw error;
+              
+              const hits = analytics.filter(a => a.event_type === 'hit').length;
+              const misses = analytics.filter(a => a.event_type === 'miss').length;
+              const total = hits + misses;
+              const hitRate = total > 0 ? (hits / total) * 100 : 0;
+              
+              const cacheResponses = analytics.filter(a => a.source === 'cache' && a.response_time_ms);
+              const avgCacheTime = cacheResponses.length > 0
+                ? cacheResponses.reduce((sum, a) => sum + a.response_time_ms, 0) / cacheResponses.length
+                : 0;
+              
+              console.log('📊 Cache Performance (Last 24h):');
+              console.log(\`  Hit Rate: \${hitRate.toFixed(1)}%\`);
+              console.log(\`  Total Requests: \${total}\`);
+              console.log(\`  Cache Hits: \${hits}\`);
+              console.log(\`  Cache Misses: \${misses}\`);
+              console.log(\`  Avg Cache Response: \${Math.round(avgCacheTime)}ms\`);
+              
+              // Create alerts if thresholds exceeded
+              const alerts = [];
+              
+              if (hitRate < 60) {
+                alerts.push({
+                  alert_type: 'low_hit_rate',
+                  severity: hitRate < 40 ? 'critical' : 'warning',
+                  message: \`Cache hit rate is \${hitRate.toFixed(1)}%, below 60% threshold\`,
+                  threshold: 60,
+                  current_value: hitRate,
+                  resolved: false
+                });
+              }
+              
+              if (avgCacheTime > 1000) {
+                alerts.push({
+                  alert_type: 'high_response_time',
+                  severity: avgCacheTime > 2000 ? 'critical' : 'warning',
+                  message: \`Average cache response time is \${Math.round(avgCacheTime)}ms, above 1000ms threshold\`,
+                  threshold: 1000,
+                  current_value: avgCacheTime,
+                  resolved: false
+                });
+              }
+              
+              if (alerts.length > 0) {
+                console.log(\`\n⚠️  Creating \${alerts.length} alert(s)\`);
+                await supabase.from('cache_alerts').insert(alerts);
+              } else {
+                console.log('\n✅ All metrics within normal range');
+              }
+              
+            } catch (error) {
+              console.error('Monitoring failed:', error);
+              process.exit(1);
+            }
+          }
+          
+          checkPerformance();
+          "
+
+      - name: Summary
+        run: echo "Cache performance monitoring completed"

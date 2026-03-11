@@ -1,0 +1,18 @@
+name: Cache Email Notifications
+
+on:
+  schedule:
+    # Run every hour to check for critical cache issues
+    - cron: '0 * * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  check-and-notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Cache Performance and Send Alerts
+        run: |
+          curl -X POST '${{ secrets.SUPABASE_URL }}/functions/v1/cache-performance-monitor' \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{"action": "check_and_notify"}'

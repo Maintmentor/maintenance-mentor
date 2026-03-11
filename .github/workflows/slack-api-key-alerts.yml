@@ -1,0 +1,32 @@
+name: Slack API Key Alerts
+
+on:
+  schedule:
+    # Run every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  send-slack-alerts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check API Key Status and Send Slack Alerts
+        run: |
+          curl -X POST '${{ secrets.SUPABASE_URL }}/functions/v1/api-key-validator' \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Content-Type: application/json"
+          
+          # Wait for validation to complete
+          sleep 5
+          
+          # Send Slack alerts for any issues found
+          curl -X POST '${{ secrets.SUPABASE_URL }}/functions/v1/slack-alert-sender' \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "keyName": "AUTOMATED_CHECK",
+              "alertType": "info",
+              "healthScore": 100,
+              "errorMessage": "Automated API key validation completed",
+              "lastValidated": "'$(date -u +"%Y-%m-%dT%H:%M:%SZ")'"
+            }'

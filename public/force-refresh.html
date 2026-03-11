@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Force Refresh - Maintenance Mentor</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .container {
+      text-align: center;
+      padding: 2rem;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      max-width: 500px;
+    }
+    h1 { margin: 0 0 1rem; font-size: 2rem; }
+    p { margin: 0.5rem 0; opacity: 0.9; }
+    .spinner {
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-top: 4px solid white;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 2rem auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔄 Refreshing Homepage</h1>
+    <p>Clearing all caches...</p>
+    <div class="spinner"></div>
+    <p id="status">Please wait...</p>
+  </div>
+
+  <script>
+    const status = document.getElementById('status');
+    
+    async function forceRefresh() {
+      try {
+        // Step 1: Unregister service workers
+        status.textContent = 'Removing service workers...';
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const registration of registrations) {
+          await registration.unregister();
+        }
+        
+        // Step 2: Clear all caches
+        status.textContent = 'Clearing cache storage...';
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+        
+        // Step 3: Clear local storage
+        status.textContent = 'Clearing local storage...';
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        // Step 4: Redirect with cache-busting parameter
+        status.textContent = 'Redirecting to fresh homepage...';
+        setTimeout(() => {
+          window.location.href = '/?nocache=' + Date.now();
+        }, 1000);
+        
+      } catch (error) {
+        status.textContent = 'Error: ' + error.message;
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 2000);
+      }
+    }
+    
+    forceRefresh();
+  </script>
+</body>
+</html>

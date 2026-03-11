@@ -1,0 +1,86 @@
+name: Image Quality Alerts
+
+on:
+  schedule:
+    # Run every 12 hours
+    - cron: '0 */12 * * *'
+  workflow_dispatch:
+
+jobs:
+  check-image-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install @supabase/supabase-js
+
+      - name: Check image quality metrics
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          node -e "
+          const { createClient } = require('@supabase/supabase-js');
+          
+          const supabase = createClient(
+            process.env.SUPABASE_URL,
+            process.env.SUPABASE_SERVICE_ROLE_KEY
+          );
+          
+          async function checkQuality() {
+            try {
+              // Get recent image analytics
+              const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
+              
+              const { data: analytics, error } = await supabase
+                .from('image_cache_analytics')
+                .select('*')
+                .gte('created_at', twelveHoursAgo);
+              
+              if (error) throw error;
+              
+              const errors = analytics.filter(a => a.event_type === 'error').length;
+              const total = analytics.length;
+              const errorRate = total > 0 ? (errors / total) * 100 : 0;
+              
+              console.log('🖼️  Image Quality Check (Last 12h):');
+              console.log(\`  Total Requests: \${total}\`);
+              console.log(\`  Errors: \${errors}\`);
+              console.log(\`  Error Rate: \${errorRate.toFixed(2)}%\`);
+              
+              // Alert if error rate is high
+              if (errorRate > 5) {
+                console.log('⚠️  High error rate detected!');
+                
+                await supabase.from('cache_alerts').insert({
+                  alert_type: 'high_error_rate',
+                  severity: errorRate > 10 ? 'critical' : 'warning',
+                  message: \`Image error rate is \${errorRate.toFixed(1)}%, above 5% threshold\`,
+                  threshold: 5,
+                  current_value: errorRate,
+                  resolved: false
+                });
+                
+                console.log('📧 Alert created in database');
+              } else {
+                console.log('✅ Image quality within acceptable range');
+              }
+              
+            } catch (error) {
+              console.error('Quality check failed:', error);
+              process.exit(1);
+            }
+          }
+          
+          checkQuality();
+          "
+
+      - name: Summary
+        run: echo "Image quality check completed"
