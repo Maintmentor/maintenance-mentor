@@ -30,3 +30,9 @@ dist-ssr
 
 # Zip archives
 *.zip
+
+# Uploaded scratch files at root (not part of the build)
+/Screenshot*
+/Tailwind Config*
+# Plain-text code snippets pasted as files at root
+/*.txt
