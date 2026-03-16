@@ -1,17 +1,1 @@
-{
-  "name": "maintenance-mentor",
-  "version": "1.0.0",
-  "scripts": {
-    "build": "vite build",
-    "start": "vite",
-    "test": "jest"
-  },
-  "dependencies": {
-    "react": "^17.0.2",
-    "react-dom": "^17.0.2"
-  },
-  "devDependencies": {
-    "vite": "^2.6.4",
-    "jest": "^27.0.6"
-  }
-}
+{\n  "devDependencies": {\n    "@vitejs/plugin-react-swc": "latest",\n    "vite": "latest",\n    "typescript": "latest"\n  }\n}
