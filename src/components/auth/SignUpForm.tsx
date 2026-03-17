@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { Eye, EyeOff, Loader2, Zap, CreditCard } from 'lucide-react';
 import { calculatePrice } from '@/components/subscription/PricingTiers';
+import { isSupabaseConfigured } from '@/lib/supabase';
 
 interface SignUpFormProps {
   onToggleForm: () => void;
@@ -72,11 +73,21 @@ export const SignUpForm: React.FC<SignUpFormProps> = ({ onToggleForm, onSuccess 
       return;
     }
 
+    if (!isSupabaseConfigured) {
+      setError('The application is not properly configured. Please contact support.');
+      setLoading(false);
+      return;
+    }
+
     try {
       const { error } = await signUp(formData.email, formData.password, formData.fullName);
       
       if (error) {
-        setError(error.message);
+        if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
+          setError('Unable to connect to the server. Please check your internet connection and try again.');
+        } else {
+          setError(error.message);
+        }
       } else {
         setSuccess(true);
         if (onSuccess) onSuccess();
