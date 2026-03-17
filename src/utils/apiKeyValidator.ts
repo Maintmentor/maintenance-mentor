@@ -80,18 +80,34 @@ export class APIKeyValidatorService {
 
   private async saveValidationResults(results: KeyValidationResult[]) {
     for (const result of results) {
+      // Fetch current counts before upserting to safely increment them
+      const { data: current, error: fetchError } = await supabase
+        .from('api_key_status')
+        .select('validation_count, consecutive_failures')
+        .eq('key_name', result.keyName)
+        .single();
+
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error('Error fetching current key status:', fetchError);
+      }
+
       // Update or insert key status
-      await supabase.from('api_key_status').upsert({
+      const { error: upsertError } = await supabase.from('api_key_status').upsert({
         key_name: result.keyName,
         key_type: result.keyType,
         is_valid: result.isValid,
         last_validated_at: result.timestamp,
         last_error: result.error,
         health_score: result.healthScore,
-        validation_count: supabase.raw('validation_count + 1'),
-        consecutive_failures: result.isValid ? 0 : supabase.raw('consecutive_failures + 1'),
+        validation_count: (current?.validation_count ?? 0) + 1,
+        consecutive_failures: result.isValid ? 0 : (current?.consecutive_failures ?? 0) + 1,
         updated_at: new Date().toISOString()
       });
+
+      if (upsertError) {
+        console.error('Error saving key status:', upsertError);
+        throw upsertError;
+      }
 
       // Insert validation history
       await supabase.from('api_key_validation_history').insert({

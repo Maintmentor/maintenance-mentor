@@ -192,7 +192,7 @@ class EmailNotificationService {
       // Calculate trend and metrics
       const recentHistory = history?.slice(0, 5) || [];
       const missedCount = recentHistory.filter(h => !h.met_goal).length;
-      const missPercentage = (missedCount / recentHistory.length) * 100;
+      const missPercentage = recentHistory.length > 0 ? (missedCount / recentHistory.length) * 100 : 0;
       
       const trend = this.calculateTrend(recentHistory);
       const recommendations = this.generateRecommendations(
@@ -329,6 +329,8 @@ class EmailNotificationService {
         .limit(1)
         .single();
 
+      if (trendsError) throw trendsError;
+
       const goalTypeLabels = {
         response_time: 'Response Time',
         false_positive_rate: 'False Positive Rate',
@@ -385,7 +387,6 @@ class EmailNotificationService {
       });
 
       if (error) throw error;
-      return data;
     } catch (error) {
       console.error('Failed to send daily digest:', error);
       throw error;
@@ -402,7 +403,6 @@ class EmailNotificationService {
       });
 
       if (error) throw error;
-      return data;
     } catch (error) {
       console.error('Failed to send weekly digest:', error);
       throw error;
@@ -448,7 +448,6 @@ class EmailNotificationService {
     });
 
     if (error) throw error;
-    return data;
   }
 
   async getDeliveryStats(): Promise<{
