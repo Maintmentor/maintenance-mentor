@@ -36,3 +36,6 @@ dist-ssr
 /Tailwind Config*
 # Plain-text code snippets pasted as files at root
 /*.txt
+
+# TypeScript build info
+*.tsbuildinfo
