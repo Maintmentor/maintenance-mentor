@@ -46,6 +46,8 @@ export const SignInForm: React.FC<SignInFormProps> = ({ onToggleForm, onForgotPa
           setError('Invalid email or password');
         } else if (error.message.includes('Email not confirmed')) {
           setError('Please check your email and verify your account before signing in');
+        } else if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
+          setError('Unable to connect to the server. Please check your internet connection and try again.');
         } else {
           setError(error.message);
         }
