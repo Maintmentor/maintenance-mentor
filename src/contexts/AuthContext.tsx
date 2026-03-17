@@ -293,7 +293,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (error) return { data, error };
 
-    // Successfully signed in - 2FA check is optional
+    // Check if the user has 2FA enabled
+    try {
+      const { data: twoFAStatus, error: statusError } = await supabase.functions.invoke('totp-manager', {
+        body: { action: 'get_2fa_status' }
+      });
+
+      if (!statusError && twoFAStatus?.is_enabled) {
+        // Sign the user back out so they must complete 2FA
+        await supabase.auth.signOut();
+        setRequires2FA(true);
+        return { data: null, error: { message: '2FA_REQUIRED' } };
+      }
+    } catch {
+      // If the 2FA status check fails, allow sign-in to proceed
+    }
+
     setRequires2FA(false);
     return { data, error: null };
   };
