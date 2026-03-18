@@ -225,7 +225,7 @@ export const UserProfile: React.FC = () => {
                 </div>
                 <p className="text-gray-600">
                   {isTrialActive 
-                    ? `Trial ends ${new Date(profile?.trial_ends_at!).toLocaleDateString()}`
+                    ? `Trial ends ${new Date(profile?.trial_ends_at ?? '').toLocaleDateString()}`
                     : `$${getSubscriptionPrice(profile?.number_of_beds || 1)}/month`
                   }
                 </p>
