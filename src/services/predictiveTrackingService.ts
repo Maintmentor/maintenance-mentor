@@ -62,8 +62,8 @@ export class PredictiveTracker {
     });
 
     const lastDet = currentDetections[currentDetections.length - 1];
-    let lastWidth = lastDet.bbox.width;
-    let lastHeight = lastDet.bbox.height;
+    const lastWidth = lastDet.bbox.width;
+    const lastHeight = lastDet.bbox.height;
 
     // Predict future frames
     for (let i = 1; i <= numFramesToPredict; i++) {

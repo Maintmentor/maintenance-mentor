@@ -103,7 +103,6 @@ Deno.serve(async (req) => {
       } catch (error) {
         return { email: config.email, success: false, error: error.message };
       }
-      }
     });
 
 

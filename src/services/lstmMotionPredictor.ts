@@ -92,7 +92,7 @@ export class LSTMMotionPredictor {
     }
 
     const predictions: LSTMPrediction[] = [];
-    let currentSeq = [...sequence.positions.slice(-this.sequenceLength)];
+    const currentSeq = [...sequence.positions.slice(-this.sequenceLength)];
 
     for (let i = 0; i < steps; i++) {
       const input = tf.tensor3d([currentSeq.map(p => [p.x, p.y, p.width, p.height])]);

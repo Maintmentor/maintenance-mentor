@@ -3,13 +3,13 @@ import { supabase } from '@/lib/supabase';
 // Repair History CRUD Operations
 export const repairHistoryService = {
   async getAll(userId?: string) {
-    const query = supabase
+    let query = supabase
       .from('repair_history')
       .select('*')
       .order('created_at', { ascending: false });
     
     if (userId) {
-      query.eq('user_id', userId);
+      query = query.eq('user_id', userId);
     }
     
     const { data, error } = await query;
@@ -101,13 +101,13 @@ export const userProfileService = {
 // Service Requests CRUD Operations
 export const serviceRequestService = {
   async getAll(userId?: string) {
-    const query = supabase
+    let query = supabase
       .from('service_requests')
       .select('*')
       .order('created_at', { ascending: false });
     
     if (userId) {
-      query.eq('user_id', userId);
+      query = query.eq('user_id', userId);
     }
     
     const { data, error } = await query;

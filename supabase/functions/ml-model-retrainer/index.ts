@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
     }
 
     // Initialize weights
-    let weights = {
+    const weights = {
       edgeDensity: currentConfig?.edge_density_weight || 0.15,
       sharpness: currentConfig?.sharpness_weight || 0.20,
       colorfulness: currentConfig?.colorfulness_weight || 0.10,
