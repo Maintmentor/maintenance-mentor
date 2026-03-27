@@ -1,0 +1,22 @@
+name: API Key Validation
+
+on:
+  schedule:
+    # Run every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  validate-keys:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate API Keys
+        run: |
+          curl -X POST "${{ secrets.SUPABASE_URL }}/functions/v1/api-key-validator" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{"action": "validate_all"}'
+
+      - name: Check for alerts
+        run: |
+          echo "API key validation completed. Check dashboard for results."
